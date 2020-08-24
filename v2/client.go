@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"mime"
+	"net"
 	"net/http"
 	"net/url"
 	"path"
@@ -59,6 +60,9 @@ type HTTPConfig struct {
 
 	// WriteEncoding specifies the encoding of write request
 	WriteEncoding ContentEncoding
+
+	UseSocket  bool
+	SocketFile string
 }
 
 // BatchPointsConfig is the config data needed to create an instance of the BatchPoints struct.
@@ -97,6 +101,12 @@ type Client interface {
 	Close() error
 }
 
+var socketFile = "/var/run/influxdb/influxdb.sock"
+
+func unixSocketDial(proto, addr string) (conn net.Conn, err error) {
+	return net.Dial("unix", socketFile)
+}
+
 // NewHTTPClient returns a new Client from the provided config.
 // Client is safe for concurrent use by multiple goroutines.
 func NewHTTPClient(conf HTTPConfig) (Client, error) {
@@ -127,6 +137,10 @@ func NewHTTPClient(conf HTTPConfig) (Client, error) {
 	}
 	if conf.TLSConfig != nil {
 		tr.TLSClientConfig = conf.TLSConfig
+	}
+	if conf.UseSocket {
+		socketFile = conf.SocketFile
+		tr.Dial = unixSocketDial
 	}
 	return &client{
 		url:       *u,
