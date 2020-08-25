@@ -139,7 +139,9 @@ func NewHTTPClient(conf HTTPConfig) (Client, error) {
 		tr.TLSClientConfig = conf.TLSConfig
 	}
 	if conf.UseSocket {
-		socketFile = conf.SocketFile
+		if conf.SocketFile != "" {
+			socketFile = conf.SocketFile
+		}
 		tr.Dial = unixSocketDial
 	}
 	return &client{
